@@ -196,6 +196,10 @@ header.bar h1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:now
 .tile .ic{background:rgba(255,255,255,.95);color:var(--tc)}
 .tile .go{color:#fff;position:relative;z-index:1}
 .home-grid{grid-template-columns:1fr 1fr}
+.pw-wrap{position:relative;display:block}
+.pw-wrap input{width:100%;padding-right:52px}
+.pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;font-size:1.3rem;cursor:pointer;padding:6px 8px;opacity:.6}
+.pw-eye.on{opacity:1}
 .lang-panel{display:flex;flex-direction:column;gap:12px}
 .lang-panel h2{margin:0;font-size:1.5rem}
 .lang-sub{margin:-6px 0 4px;color:var(--muted);font-size:1.05rem}
@@ -361,9 +365,10 @@ setTimeout(function () { if (!window.__booted) window.__bootErr("15 second mein 
   </div>
   <form class="panel" id="loginForm" autocomplete="on">
     <label class="f">Username<input type="text" id="lUser" autocomplete="username" autocapitalize="none" required></label>
-    <label class="f">Password<input type="password" id="lPass" autocomplete="current-password" required></label>
+    <label class="f">Password<span class="pw-wrap"><input type="password" id="lPass" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" required><button type="button" class="pw-eye" id="lEye" aria-label="Password dikhao">&#128065;</button></span></label>
     <button class="btn primary block" type="submit" id="lBtn">Login</button>
     <p class="err" id="lErr"></p>
+    <button class="btn ghost block" type="button" id="fgBtn">&#128273; Password bhool gaye?</button>
   </form>
   <form class="panel" id="signupForm" hidden autocomplete="off">
     <label class="f">Poora naam *<input type="text" id="sName" required></label>
@@ -429,6 +434,11 @@ setTimeout(function () { if (!window.__booted) window.__bootErr("15 second mein 
     <div class="wk-legend" id="hWeekLegend"></div>
     <div id="hWeek"></div>
   </section>
+  <div class="panel" id="resetPanel" hidden style="background:#FFF4DB">
+    <h3 style="margin:0">&#128273; Password reset request</h3>
+    <p style="margin:0"><b id="resetCount">0</b> <span>logon ne password reset maanga hai.</span></p>
+    <button class="btn primary" type="button" data-go="users">Users / Accounts kholo</button>
+  </div>
   <div class="panel alert-card" id="alertPanel" hidden>
     <h3>Bachcha centre nahi aaya</h3>
     <p class="muted" style="margin:0">Ye bachche kai din se centre nahi aaye. Ghar jaakar pata karein.</p>
@@ -443,6 +453,7 @@ setTimeout(function () { if (!window.__booted) window.__bootErr("15 second mein 
     <div class="who"><h3 id="recentTitle">Haal ki entries</h3><button class="btn small ghost" id="recentRefresh" type="button">Refresh</button></div>
     <div class="recent" id="recentList"></div>
   </div>
+  <button class="btn ghost block" id="myPwBtn" type="button">&#128273; Mera password badlo</button>
 </main>
 
 <!-- REGISTRATION -->
@@ -701,6 +712,18 @@ setTimeout(function () { if (!window.__booted) window.__bootErr("15 second mein 
 </div>
 
 <!-- password reset sheet -->
+<div class="sheet" id="fgSheet" hidden>
+  <form class="box" id="fgForm" autocomplete="off">
+    <h3 style="margin:0">Password bhool gaye?</h3>
+    <p class="muted" style="margin:0">Apna username aur account banate samay diya mobile number likhein, phir naya password banayein.</p>
+    <label class="f">Username<input type="text" id="fgUser" autocapitalize="none" autocorrect="off" spellcheck="false"></label>
+    <label class="f">Mobile number<input type="tel" id="fgPhone" inputmode="numeric" maxlength="10"></label>
+    <label class="f">Naya password (kam se kam 6 akshar)<span class="pw-wrap"><input type="password" id="fgNew" autocapitalize="none" autocorrect="off" spellcheck="false"><button type="button" class="pw-eye" data-eye="fgNew" aria-label="Password dikhao">&#128065;</button></span></label>
+    <label class="f">Naya password dobara<span class="pw-wrap"><input type="password" id="fgNew2" autocapitalize="none" autocorrect="off" spellcheck="false"><button type="button" class="pw-eye" data-eye="fgNew2" aria-label="Password dikhao">&#128065;</button></span></label>
+    <div class="row"><button class="btn primary grow" type="submit" id="fgSubmit">Naya password banao</button><button class="btn ghost" type="button" id="fgCancel">Cancel</button></div>
+    <p class="err" id="fgErr"></p>
+  </form>
+</div>
 <div class="sheet" id="pwSheet" hidden>
   <form class="box" id="pwForm" autocomplete="off">
     <h2>Naya password set karein</h2>
