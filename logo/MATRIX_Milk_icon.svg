@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="512" height="512">  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="108" y2="108" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#18A3BF"/><stop offset="1" stop-color="#073445"/></linearGradient>
+    <radialGradient id="sun" cx="54" cy="56" r="34" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFD36E" stop-opacity="0.55"/><stop offset="1" stop-color="#FFD36E" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="108" height="108" fill="url(#bg)"/>
+  <circle cx="54" cy="56" r="34" fill="url(#sun)"/>
+  <path d="M0,92 Q27,84 54,92 Q81,100 108,92 V108 H0 Z" fill="#FFFFFF" fill-opacity="0.10"/>
+  <!-- glass -->
+  <path d="M36,40 L72,40 L67.5,82 Q67.2,84.5 64.5,84.5 L43.5,84.5 Q40.8,84.5 40.5,82 Z" fill="#FFFFFF" fill-opacity="0.25"/>
+  <path d="M37.3,52 Q45,47.5 54,52 Q63,56.5 70.7,52 L67.5,82 Q67.2,84.5 64.5,84.5 L43.5,84.5 Q40.8,84.5 40.5,82 Z" fill="#FFFFFF"/>
+  <path d="M36,40 L72,40 L67.5,82 Q67.2,84.5 64.5,84.5 L43.5,84.5 Q40.8,84.5 40.5,82 Z" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M41.5,44 L42.6,50" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- face -->
+  <path d="M46.5,63 A2.6,3.2 0 1,1 46.49,63 Z M61.5,63 A2.6,3.2 0 1,1 61.49,63 Z" fill="#08394A"/>
+  <path d="M47.3,63.6 A0.9,0.9 0 1,1 47.29,63.6 Z M62.3,63.6 A0.9,0.9 0 1,1 62.29,63.6 Z" fill="#FFFFFF"/>
+  <path d="M42.5,70.5 A2.8,1.8 0 1,1 42.49,70.5 Z M65.5,70.5 A2.8,1.8 0 1,1 65.49,70.5 Z" fill="#F29BB5"/>
+  <path d="M49.5,71 Q54,76.5 58.5,71" fill="none" stroke="#08394A" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- heart -->
+  <path d="M54,35 C47,30.5 46.5,24.5 50.3,23.3 C52.3,22.7 53.6,24 54,25.2 C54.4,24 55.7,22.7 57.7,23.3 C61.5,24.5 61,30.5 54,35 Z" fill="#FF6F91"/>
+  <!-- sparkles -->
+  <path d="M77,46 L78.2,49.3 L81.5,50.5 L78.2,51.7 L77,55 L75.8,51.7 L72.5,50.5 L75.8,49.3 Z" fill="#FFE08A"/>
+  <path d="M30.5,58 L31.3,60.2 L33.5,61 L31.3,61.8 L30.5,64 L29.7,61.8 L27.5,61 L29.7,60.2 Z" fill="#FFFFFF" fill-opacity="0.85"/>
+</svg>

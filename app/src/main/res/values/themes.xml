@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.MilkTracker" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">#0B6B85</item>
+        <item name="android:statusBarColor">#0B6B85</item>
+        <item name="android:navigationBarColor">#073445</item>
+        <!-- splash while starting -->
+        <item name="android:windowBackground">@drawable/splash_window</item>
+    </style>
+</resources>

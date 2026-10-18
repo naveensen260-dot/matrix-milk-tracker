@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- icon background: teal gradient, warm sun glow, soft wave -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:pathData="M0,0 H108 V108 H0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="0" android:startY="0" android:endX="108" android:endY="108"
+                android:startColor="#18A3BF" android:endColor="#073445" />
+        </aapt:attr>
+    </path>
+    <path android:pathData="M54,22 A34,34 0 1,1 53.99,22 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="54" android:centerY="56" android:gradientRadius="34"
+                android:startColor="#8CFFD36E" android:endColor="#00FFD36E" />
+        </aapt:attr>
+    </path>
+    <path android:fillColor="#1AFFFFFF"
+        android:pathData="M0,92 Q27,84 54,92 Q81,100 108,92 V108 H0 Z" />
+</vector>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MATRIX Milk Tracker: happy glass of milk with a heart -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#40FFFFFF"
+        android:pathData="M36,40 L72,40 L67.5,82 Q67.2,84.5 64.5,84.5 L43.5,84.5 Q40.8,84.5 40.5,82 Z" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M37.3,52 Q45,47.5 54,52 Q63,56.5 70.7,52 L67.5,82 Q67.2,84.5 64.5,84.5 L43.5,84.5 Q40.8,84.5 40.5,82 Z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="2.6" android:strokeLineJoin="round" android:fillColor="#00000000"
+        android:pathData="M36,40 L72,40 L67.5,82 Q67.2,84.5 64.5,84.5 L43.5,84.5 Q40.8,84.5 40.5,82 Z" />
+    <path android:strokeColor="#B3FFFFFF" android:strokeWidth="2.2" android:strokeLineCap="round"
+        android:pathData="M41.5,44 L42.6,50" />
+    <!-- happy face -->
+    <path android:fillColor="#08394A"
+        android:pathData="M46.5,63 A2.6,3.2 0 1,1 46.49,63 Z M61.5,63 A2.6,3.2 0 1,1 61.49,63 Z" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M47.3,63.6 A0.9,0.9 0 1,1 47.29,63.6 Z M62.3,63.6 A0.9,0.9 0 1,1 62.29,63.6 Z" />
+    <path android:fillColor="#F29BB5"
+        android:pathData="M42.5,70.5 A2.8,1.8 0 1,1 42.49,70.5 Z M65.5,70.5 A2.8,1.8 0 1,1 65.49,70.5 Z" />
+    <path android:strokeColor="#08394A" android:strokeWidth="2.2" android:strokeLineCap="round" android:fillColor="#00000000"
+        android:pathData="M49.5,71 Q54,76.5 58.5,71" />
+    <!-- heart -->
+    <path android:fillColor="#FF6F91"
+        android:pathData="M54,35 C47,30.5 46.5,24.5 50.3,23.3 C52.3,22.7 53.6,24 54,25.2 C54.4,24 55.7,22.7 57.7,23.3 C61.5,24.5 61,30.5 54,35 Z" />
+    <!-- sparkles -->
+    <path android:fillColor="#FFE08A"
+        android:pathData="M77,46 L78.2,49.3 L81.5,50.5 L78.2,51.7 L77,55 L75.8,51.7 L72.5,50.5 L75.8,49.3 Z" />
+    <path android:fillColor="#D9FFFFFF"
+        android:pathData="M30.5,58 L31.3,60.2 L33.5,61 L31.3,61.8 L30.5,64 L29.7,61.8 L27.5,61 L29.7,60.2 Z" />
+</vector>

@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MATRIX Milk Tracker</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Mukta:wght@400;500;700&display=swap">
+<style>
+/* Layout: one task per screen, big thumb-size buttons, sticky header with back; overlays for tick / cross results. */
+:root{
+  --bg:#F2F6F4; --surface:#FFFFFF; --sunk:#E5EDEA; --fg:#14232A; --muted:#55666D; --line:#D0DCD8;
+  --accent:#0B6B85; --accent-ink:#FFFFFF; --accent-soft:#DCEEF2;
+  --ok:#1E7A46; --ok-soft:#DDF1E4; --warn:#9A5B00; --warn-soft:#FBEBCF; --bad:#B3261E; --bad-soft:#F8DEDB;
+  --f-display:"Baloo 2","Mukta",system-ui,sans-serif;
+  --f-body:"Mukta",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --c-full:#0B6B85; --c-half:#E39A2D; --c-qtr:#C2477A; --c-home:#2E8B57; --deep:#08394A; --deep-ink:#E8F4F7; --drop:#E39A2D;
+  --tile-1:#E0F0F4; --tile-1i:#0B6B85; --tile-2:#FCEBD0; --tile-2i:#A9620A; --tile-3:#E4F3E8; --tile-3i:#1E7A46; --tile-4:#F3E3EC; --tile-4i:#A23A68;
+  --sky:#D9F1FF; --sky-2:#B8E3FB; --navy:#123B5C; --navy-2:#3F6684; --milk:#FFFFFF; --sun:#FFC83D; --coral:#F25F5C; --leaf:#12A37A; --berry:#7357E6; --ocean:#1E88E5;
+  --wk-this:#F25F5C; --wk-last:#8EC9F0; --card-glow:0 8px 24px rgba(18,59,92,.10);
+  --r:12px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0F181C; --surface:#172329; --sunk:#0B1215; --fg:#E4ECEE; --muted:#93A5AB; --line:#2A3A41;
+  --accent:#4FB3CF; --accent-ink:#06222B; --accent-soft:#163742;
+  --ok:#6FD39A; --ok-soft:#163327; --warn:#F0B95A; --warn-soft:#3A2B10; --bad:#F2918A; --bad-soft:#3D1C1A;
+  --c-full:#4FB3CF; --c-half:#F0B95A; --c-qtr:#E58AB0; --c-home:#6FD39A; --deep:#0A2F3B; --deep-ink:#DCEEF2; --drop:#F0B95A;
+  --tile-1:#163742; --tile-1i:#7FD0E6; --tile-2:#3A2B10; --tile-2i:#F0B95A; --tile-3:#163327; --tile-3i:#6FD39A; --tile-4:#3A1B2A; --tile-4i:#E58AB0;
+  --sky:#10314A; --sky-2:#1A4766; --navy:#EAF6FF; --navy-2:#A9C8DE; --milk:#F4FAFF; --wk-last:#3D6E91; --card-glow:0 8px 24px rgba(0,0,0,.35); color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-body);font-size:16px;line-height:1.45;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+header.bar{position:sticky;top:0;z-index:5;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;gap:8px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));min-height:56px}
+header.bar h1{font-family:var(--f-display);font-size:1.25rem;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header.bar button{font:inherit;background:transparent;color:inherit;border:1px solid currentColor;border-radius:10px;padding:6px 12px;min-height:40px;cursor:pointer;font-weight:700}
+main{max-width:720px;margin:0 auto;padding-block:16px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+h2{font-family:var(--f-display);font-size:1.3rem;margin:0;text-wrap:balance}
+h3{font-size:1rem;margin:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.grow{flex:1 1 150px;min-width:0}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.88rem;color:var(--muted);font-weight:500}
+input[type=text],input[type=tel],input[type=password],input[type=number],input[type=date],input[type=month],input[type=url],select{font:inherit;font-size:1rem;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-height:48px}
+input:focus-visible,select:focus-visible,button:focus-visible,.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn{font:inherit;font-weight:700;font-size:1rem;border:0;border-radius:10px;padding:12px 16px;min-height:50px;cursor:pointer;background:var(--sunk);color:var(--fg);display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center;text-decoration:none}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.ok{background:var(--ok);color:var(--surface)}
+.btn.bad{background:var(--bad);color:var(--surface)}
+.btn.ghost{background:transparent;border:1px solid var(--line)}
+.btn.small{min-height:40px;padding:6px 12px;font-size:.92rem}
+.btn.block{width:100%}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.muted{color:var(--muted);font-size:.9rem;margin:0}
+.err{color:var(--bad);font-weight:500;margin:0}
+.note{padding:10px 12px;border-radius:10px;background:var(--warn-soft);font-size:.92rem}
+.note.bad{background:var(--bad-soft);color:var(--fg)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--sunk);border-radius:12px;padding:4px;gap:4px}
+.tabs.four{grid-template-columns:repeat(4,1fr)}
+.gtiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:8px 0}
+.gtile{border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.gtile b{font-family:var(--f-display);font-size:1.7rem;line-height:1.1}
+.gtile span{font-size:.85rem;font-weight:600}
+.gtile.up{background:var(--ok-soft);color:var(--ok)} .gtile.same{background:var(--warn-soft);color:var(--warn)}
+.gtile.down{background:var(--bad-soft);color:var(--bad)} .gtile.avg{background:var(--accent-soft);color:var(--accent)}
+.gcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px}
+.gcard{border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:2px;background:var(--surface)}
+.gcard.down{border-color:var(--bad);background:var(--bad-soft)}
+.gcard .nm{font-weight:700;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gcard .kg{font-family:var(--f-display);font-size:1.25rem;font-weight:700}
+.gcard small{color:var(--muted)}
+.ghist{background:var(--sunk);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.ghist h4{margin:0;font-size:.95rem}
+.ghist table{width:100%;min-width:0;border-collapse:collapse;font-size:.88rem}
+.ghist td,.ghist th{padding:5px 4px;border-bottom:1px solid var(--line);text-align:left}
+.ghist td.n,.ghist th.n{text-align:right;font-variant-numeric:tabular-nums}
+.ghist tr.old td{color:var(--muted);text-decoration:line-through}
+.up{color:var(--ok);font-weight:700} .down{color:var(--bad);font-weight:700}
+.tabs button{font:inherit;font-weight:700;border:0;background:transparent;color:var(--muted);border-radius:9px;min-height:44px;cursor:pointer;font-size:.95rem}
+.tabs button[aria-selected=true]{background:var(--surface);color:var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.home-grid{display:grid;gap:12px}
+.home-btn{display:grid;grid-template-columns:56px 1fr;gap:14px;align-items:center;text-align:left;padding:18px;border-radius:16px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;cursor:pointer;min-height:96px}
+.home-btn .ic{width:56px;height:56px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.home-btn b{font-family:var(--f-display);font-size:1.25rem;display:block;line-height:1.2}
+.home-btn span{color:var(--muted);font-size:.9rem}
+.who{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{display:inline-block;font-size:.78rem;font-weight:700;padding:2px 10px;border-radius:99px;letter-spacing:.02em;background:var(--accent-soft);color:var(--accent)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.photo-row{display:grid;grid-template-columns:88px 1fr;gap:12px;align-items:center}
+.photo-box{width:88px;height:88px;border-radius:12px;background:var(--sunk);border:1px dashed var(--line);display:grid;place-items:center;overflow:hidden;color:var(--muted);font-size:.75rem;text-align:center}
+.photo-box img{width:100%;height:100%;object-fit:cover}
+.choice{display:grid;gap:8px}
+.choice label{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;cursor:pointer;background:var(--bg);font-weight:500;min-height:54px}
+.choice input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.choice label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.yesno{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.yesno .btn[aria-pressed=true]{outline:3px solid var(--accent);outline-offset:1px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media (min-width:560px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--sunk);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.stat span{font-size:.75rem;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.stat b{font-family:var(--f-display);font-size:1.9rem;line-height:1;font-variant-numeric:tabular-nums}
+.bars{display:grid;gap:8px}
+.bar-row{display:grid;grid-template-columns:110px 1fr 44px;gap:8px;align-items:center;font-size:.92rem}
+.bar-track{height:14px;background:var(--sunk);border-radius:99px;overflow:hidden}
+.bar-fill{height:100%;background:var(--accent);border-radius:99px}
+.bar-row b{text-align:right;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--sunk);font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+td.n,th.n{text-align:right}
+.overlay{position:fixed;inset:0;z-index:30;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px max(24px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px));text-align:center;overflow:auto}
+.overlay .mark{width:132px;height:132px;border-radius:50%;display:grid;place-items:center}
+.overlay.ok .mark{background:var(--ok-soft);color:var(--ok)}
+.overlay.bad .mark{background:var(--bad-soft);color:var(--bad)}
+.overlay h2{font-size:1.7rem}
+.overlay p{margin:0;max-width:34ch;color:var(--muted)}
+.overlay .acts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px}
+.overlay .mark svg{width:72px;height:72px}
+@media (prefers-reduced-motion: no-preference){.overlay .mark{animation:pop .35s ease-out}@keyframes pop{from{transform:scale(.6);opacity:.2}to{transform:none;opacity:1}}}
+.sheet{position:fixed;inset:0;background:rgba(5,15,20,.72);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet .box{background:var(--surface);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px;max-height:100%;overflow:auto}
+.sheet video{width:100%;border-radius:12px;background:#000;aspect-ratio:3/4;object-fit:cover}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:50;max-width:calc(100% - 32px);font-size:.95rem}
+.busy{display:inline-block;width:18px;height:18px;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.busy{animation:none}}
+.awc-pick{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.awc-pick input[type=search]{font:inherit;font-size:1rem;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-height:46px}
+.awc-list{max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:4px}
+.awc-list label{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;cursor:pointer;min-height:44px}
+.awc-list label:has(input:checked){background:var(--accent-soft)}
+.awc-list input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.awc-list small{color:var(--muted)}
+.brand{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding-block:12px}
+.brand h1{font-family:var(--f-display);font-size:2rem;margin:0;color:var(--accent)}
+/* hero + dashboard */
+.hero{position:relative;overflow:hidden;border-radius:20px;background:var(--deep);color:var(--deep-ink);padding:20px 18px 18px;display:flex;flex-direction:column;gap:14px}
+.hero .deco{position:absolute;right:-30px;top:-34px;width:170px;height:170px;opacity:.9;pointer-events:none}
+.hero h2{font-family:var(--f-display);font-size:1.55rem;line-height:1.15;color:#fff;margin:0;position:relative;max-width:75%}
+.hero .sub{font-size:.88rem;opacity:.85;position:relative;max-width:78%}
+.role-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);color:#fff;border-radius:99px;padding:3px 12px;font-size:.8rem;font-weight:700;letter-spacing:.02em;width:max-content;position:relative}
+.role-chip i{width:8px;height:8px;border-radius:50%;background:var(--drop)}
+.hero-stats{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;background:rgba(255,255,255,.07);border-radius:16px;padding:12px;position:relative}
+.ring text{font-family:var(--f-display)}
+.week svg{width:100%;height:auto;display:block}
+.tile{display:grid;grid-template-columns:58px 1fr 20px;gap:14px;align-items:center;text-align:left;padding:16px;border-radius:18px;border:0;background:var(--tc,var(--tile-1));color:var(--fg);font:inherit;cursor:pointer;min-height:92px;width:100%}
+.tile .ic{width:58px;height:58px;border-radius:16px;background:var(--surface);color:var(--ti,var(--tile-1i));display:grid;place-items:center}
+.tile b{font-family:var(--f-display);font-size:1.22rem;display:block;line-height:1.2;color:var(--fg)}
+.tile span{color:var(--muted);font-size:.88rem}
+.tile .go{color:var(--ti,var(--tile-1i));font-weight:700;font-size:1.3rem}
+.recent{display:flex;flex-direction:column;gap:8px}
+.rec{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--bg)}
+.rec .dot{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:.8rem;color:#fff}
+.rec b{display:block;font-size:.95rem}
+.rec small{color:var(--muted)}
+.chart-wrap svg{width:100%;height:auto;display:block}
+.donut-row{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:center}
+.donut-row .chart-wrap{max-width:170px;width:100%;margin:0 auto}
+@media (max-width:380px){.donut-row{grid-template-columns:1fr}}
+.legend{display:grid;gap:6px}
+.legend div{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:center;font-size:.92rem}
+.legend i{width:14px;height:14px;border-radius:4px}
+.legend b{font-variant-numeric:tabular-nums}
+.sec-picks{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.sec-picks label{display:flex;align-items:center;gap:6px;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:.9rem}
+.sec-picks label:has(input:checked){background:var(--accent-soft);border-color:var(--accent)}
+.sec-picks input{accent-color:var(--accent);width:18px;height:18px}
+/* colourful v3 */
+header.bar{background:var(--navy);color:var(--sky)}
+header.bar h1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#langBtn{padding:6px 9px}
+@media (prefers-color-scheme: dark){header.bar{background:#0B2235;color:#EAF6FF}}
+.hero{background:var(--sky);color:var(--navy);padding:18px 18px 54px;border-radius:24px;box-shadow:var(--card-glow)}
+.hero .clouds{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+.hero-top{display:grid;grid-template-columns:1fr 118px;gap:8px;align-items:center;position:relative}
+.hero-top>div:first-child{display:flex;flex-direction:column;gap:8px;min-width:0}
+.hero h2{color:var(--navy);max-width:none;font-size:1.6rem}
+.hero .sub{color:var(--navy-2);max-width:none;opacity:1}
+.role-chip{background:var(--navy);color:var(--sky)}
+.role-chip i{background:var(--sun)}
+.glass svg{width:118px;height:auto;display:block}
+.hero .wave{position:absolute;left:0;right:0;bottom:-1px;width:100%;height:46px}
+.hero .today-line{position:relative;display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.pill-stat{background:var(--milk);color:#123B5C;border-radius:99px;padding:4px 12px;font-size:.85rem;font-weight:700;box-shadow:0 2px 6px rgba(18,59,92,.12)}
+.pill-stat b{font-family:var(--f-display);font-size:1.05rem}
+.week-card{border:0;box-shadow:var(--card-glow);border-radius:20px}
+.wk-legend{display:flex;gap:12px;font-size:.82rem;color:var(--muted);flex-wrap:wrap}
+.wk-legend i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:4px;vertical-align:-1px}
+#hWeek svg{width:100%;height:auto;display:block}
+.tile{background:var(--tc);color:#fff;box-shadow:0 6px 16px rgba(18,59,92,.16);border-radius:22px;position:relative;overflow:hidden}
+.tile::after{content:"";position:absolute;right:-26px;bottom:-34px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.14)}
+.tile b{color:#fff}
+.tile span{color:rgba(255,255,255,.9)}
+.tile .ic{background:rgba(255,255,255,.95);color:var(--tc)}
+.tile .go{color:#fff;position:relative;z-index:1}
+.home-grid{grid-template-columns:1fr 1fr}
+.lang-panel{display:flex;flex-direction:column;gap:12px}
+.lang-panel h2{margin:0;font-size:1.5rem}
+.lang-sub{margin:-6px 0 4px;color:var(--muted);font-size:1.05rem}
+.lang-list{display:flex;flex-direction:column;gap:12px}
+.lang-card{display:grid;grid-template-columns:56px 1fr 28px;gap:14px;align-items:center;text-align:left;border:2px solid var(--line);background:var(--surface);color:var(--fg);border-radius:18px;padding:14px;font:inherit;cursor:pointer;min-height:84px}
+.lang-card b{display:block;font-size:1.3rem} .lang-card small{color:var(--muted);font-size:.92rem}
+.lang-ic{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-size:1.5rem;font-weight:800}
+.lang-card i{font-style:normal;font-weight:800;color:var(--accent);opacity:0}
+.lang-card.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)} .lang-card.on i{opacity:1}
+.lang-note{margin:4px 0 0;color:var(--muted);font-size:.88rem;line-height:1.5}
+body.lang-hi{font-family:var(--f-body),"Noto Sans Devanagari","Mangal",sans-serif}
+.home-grid .tile.wide{grid-column:1 / -1;grid-template-columns:58px 1fr 20px;grid-template-rows:auto;min-height:96px;align-items:center}
+.home-grid .tile.wide .go{display:block}
+.home-grid .tile.wide b{font-size:1.4rem}
+.pill-stat.left{background:#FFE3B3;color:#7A4A00} .pill-stat.done{background:#D3F2DF;color:#1E6B40}
+.kids{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto;padding:2px}
+.kid{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;text-align:left;border:2px solid var(--line);background:var(--surface);color:var(--fg);border-radius:16px;padding:10px 12px;font:inherit;cursor:pointer;min-height:64px}
+.kid .kav{width:44px;height:44px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:800}
+.kid .knm b{display:block;font-size:1.05rem} .kid .knm small{color:var(--muted)}
+.kid .kst{font-size:.82rem;font-weight:800;padding:4px 10px;border-radius:99px;background:#FFE3B3;color:#7A4A00}
+.kid.done{opacity:.6} .kid.done .kst{background:#D3F2DF;color:#1E6B40}
+.kid.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);opacity:1}
+.home-grid .tile{grid-template-columns:1fr;grid-template-rows:auto auto;min-height:150px;align-content:space-between;padding:16px}
+.home-grid .tile .go{display:none}
+.home-grid .tile:first-child:nth-last-child(odd){grid-column:1 / -1;grid-template-columns:58px 1fr;min-height:100px;align-items:center}
+.home-grid .tile b{font-size:1.12rem}
+@media (max-width:340px){.home-grid{grid-template-columns:1fr}}
+#recentPanel{border:0;box-shadow:var(--card-glow);border-radius:20px}
+/* caregivers */
+.cg-box{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--tile-2);border:1px dashed var(--line)}
+.cg-list{display:flex;flex-direction:column;gap:6px}
+.cg-item{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;background:var(--surface);border-radius:12px;padding:6px 8px}
+.cg-item img,.cg-av{width:44px;height:44px;border-radius:50%;object-fit:cover;background:var(--berry);color:#fff;display:grid;place-items:center;font-weight:800}
+.cg-item small{color:var(--muted)}
+.cg-item button{border:0;background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:6px 10px;font:inherit;font-weight:700;cursor:pointer}
+.cg-pick{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:14px;background:var(--tile-2)}
+.cg-chips{display:flex;flex-wrap:wrap;gap:8px}
+.cg-chip{display:flex;align-items:center;gap:8px;border:0;border-radius:99px;padding:6px 14px 6px 6px;background:var(--surface);font:inherit;font-weight:700;cursor:pointer;color:var(--fg);box-shadow:0 2px 6px rgba(18,59,92,.12)}
+.cg-chip .cg-av{width:34px;height:34px;font-size:.85rem}
+.cg-chip small{color:var(--muted);font-weight:500}
+.alert-card{border:0;background:var(--bad-soft);border-radius:20px}
+.alert-card h3{color:var(--bad)}
+.fam-kid{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--bg);border:1px solid var(--line)}
+.fam-kid .top{display:flex;align-items:center;gap:10px;font-weight:700}
+.fam-kid .top input{width:22px;height:22px;accent-color:var(--accent)}
+.amt{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.amt label{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:.85rem;font-weight:700;cursor:pointer;text-align:center}
+.amt label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.amt input{position:absolute;opacity:0;pointer-events:none}
+.amt svg{width:30px;height:30px}
+.fam-kid.off .amt{opacity:.4;pointer-events:none}
+.ucard{gap:8px}
+.ucard .row{gap:6px}
+</style>
+</head>
+<body>
+<div id="boot" role="status" aria-live="polite">
+<style>
+#boot{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 16px;text-align:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff;background:linear-gradient(160deg,#18A3BF 0%,#0B6B85 45%,#073445 100%);overflow:hidden;transition:opacity .45s ease,transform .45s ease}
+#boot.out{opacity:0;transform:scale(1.04);pointer-events:none}
+#boot .glow{position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,211,110,.38) 0%,rgba(255,211,110,0) 65%);top:50%;left:50%;margin:-290px 0 0 -210px}
+#boot .wave{position:absolute;left:-10%;right:-10%;bottom:-40px;height:150px;background:rgba(255,255,255,.08);border-radius:50% 50% 0 0}
+#boot svg{width:210px;height:210px;position:relative;filter:drop-shadow(0 10px 24px rgba(0,0,0,.25))}
+#boot .milk{animation:spFill 1.3s cubic-bezier(.3,.7,.3,1) both}
+#boot .face{animation:spFace .5s 1.05s ease-out both}
+#boot .heart{transform-origin:54px 29px;animation:spBeat 1.2s 1.2s ease-in-out infinite both}
+#boot .spark{transform-box:fill-box;transform-origin:center;animation:spTw 1.6s ease-in-out infinite}
+#boot .spark.b{animation-delay:.8s}
+#boot .bub{animation:spBub 2.2s ease-in infinite}
+#boot .bub.b{animation-delay:.7s} #boot .bub.c{animation-delay:1.4s}
+#boot h1{margin:6px 0 0;font-size:1.75rem;letter-spacing:.3px;position:relative}
+#boot h1 b{color:#FFD36E}
+#boot .tag{margin:0;font-size:1rem;opacity:.92;position:relative}
+#boot .dots{display:flex;gap:7px;margin-top:10px;position:relative}
+#boot .dots i{width:9px;height:9px;border-radius:50%;background:#fff;opacity:.35;animation:spDot 1s ease-in-out infinite}
+#boot .dots i:nth-child(2){animation-delay:.15s} #boot .dots i:nth-child(3){animation-delay:.3s}
+#boot .org{position:absolute;bottom:22px;left:0;right:0;margin:0;font-size:.85rem;opacity:.85}
+#bootMsg{margin:4px 0 0;font-size:.85rem;opacity:.85;word-break:break-word;max-width:520px;position:relative}
+#bootMsg.bad{opacity:1;color:#FFE1DC;background:rgba(179,38,30,.55);padding:8px 12px;border-radius:10px;font-family:monospace}
+@keyframes spFill{from{transform:translateY(34px)}to{transform:translateY(0)}}
+@keyframes spFace{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@keyframes spBeat{0%,100%{transform:scale(1)}15%{transform:scale(1.18)}30%{transform:scale(1)}45%{transform:scale(1.1)}}
+@keyframes spTw{0%,100%{opacity:.35;transform:scale(.7)}50%{opacity:1;transform:scale(1.1)}}
+@keyframes spBub{0%{opacity:0;transform:translateY(0)}20%{opacity:.9}100%{opacity:0;transform:translateY(-22px)}}
+@keyframes spDot{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-5px)}}
+@media (prefers-reduced-motion:reduce){#boot *{animation:none!important}}
+</style>
+<div class="glow"></div><div class="wave"></div>
+<svg viewBox="16 14 76 76" aria-hidden="true">
+  <defs><clipPath id="spGlass"><path d="M36,40 L72,40 L67.5,82 Q67.2,84.5 64.5,84.5 L43.5,84.5 Q40.8,84.5 40.5,82 Z"/></clipPath></defs>
+  <path d="M36,40 L72,40 L67.5,82 Q67.2,84.5 64.5,84.5 L43.5,84.5 Q40.8,84.5 40.5,82 Z" fill="#FFFFFF" fill-opacity="0.22"/>
+  <g clip-path="url(#spGlass)"><g class="milk"><path d="M30,52 Q37.5,47.5 45,52 Q54,56.5 63,52 Q70,47.5 78,52 V90 H30 Z" fill="#FFFFFF"/>
+    <circle class="bub" cx="47" cy="60" r="1.3" fill="#BFE6EF"/><circle class="bub b" cx="58" cy="66" r="1.1" fill="#BFE6EF"/><circle class="bub c" cx="52" cy="76" r="1.2" fill="#BFE6EF"/></g></g>
+  <path d="M36,40 L72,40 L67.5,82 Q67.2,84.5 64.5,84.5 L43.5,84.5 Q40.8,84.5 40.5,82 Z" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M41.5,44 L42.6,50" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="2.2" stroke-linecap="round"/>
+  <g class="face">
+    <path d="M46.5,63 A2.6,3.2 0 1,1 46.49,63 Z M61.5,63 A2.6,3.2 0 1,1 61.49,63 Z" fill="#08394A"/>
+    <path d="M47.3,63.6 A0.9,0.9 0 1,1 47.29,63.6 Z M62.3,63.6 A0.9,0.9 0 1,1 62.29,63.6 Z" fill="#FFFFFF"/>
+    <path d="M42.5,70.5 A2.8,1.8 0 1,1 42.49,70.5 Z M65.5,70.5 A2.8,1.8 0 1,1 65.49,70.5 Z" fill="#F29BB5"/>
+    <path d="M49.5,71 Q54,76.5 58.5,71" fill="none" stroke="#08394A" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+  <path class="heart" d="M54,35 C47,30.5 46.5,24.5 50.3,23.3 C52.3,22.7 53.6,24 54,25.2 C54.4,24 55.7,22.7 57.7,23.3 C61.5,24.5 61,30.5 54,35 Z" fill="#FF6F91"/>
+  <path class="spark" d="M77,46 L78.2,49.3 L81.5,50.5 L78.2,51.7 L77,55 L75.8,51.7 L72.5,50.5 L75.8,49.3 Z" fill="#FFE08A"/>
+  <path class="spark b" d="M30.5,58 L31.3,60.2 L33.5,61 L31.3,61.8 L30.5,64 L29.7,61.8 L27.5,61 L29.7,60.2 Z" fill="#FFFFFF"/>
+</svg>
+<h1>MATRIX <b>Milk</b> Tracker</h1>
+<p class="tag">Har bachcha &middot; Har din &middot; Pura glass</p>
+<div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+<p id="bootMsg">App load ho raha hai&hellip;</p>
+<p class="org">CINI &ndash; JIWAN &middot; Simdega Sadar</p>
+</div>
+<script>
+window.__bootT0 = Date.now();
+window.__hideSplash = function () {
+  var el = document.getElementById("boot");
+  if (!el) return;
+  var wait = Math.max(0, 1700 - (Date.now() - window.__bootT0));
+  setTimeout(function () { el.className = "out"; setTimeout(function () { el.hidden = true; }, 480); }, wait);
+};
+window.__bootErr = function (m) {
+  var el = document.getElementById("bootMsg");
+  var d = document.querySelector("#boot .dots"); if (d) d.style.display = "none";
+  if (el) { el.className = "bad"; el.textContent = "App shuru nahi hua: " + m + " - ye screenshot admin ko bhejein."; }
+};
+window.addEventListener("error", function (e) {
+  if (window.__booted) return;
+  var where = "";
+  try {
+    var src = document.documentElement.outerHTML.split(String.fromCharCode(10));
+    var n = (e.lineno || 1) - 1, c = (e.colno || 1) - 1;
+    where = " [line " + e.lineno + ", col " + e.colno + "] " + JSON.stringify((src[n - 1] || "").slice(0, 90)) + " / " + JSON.stringify((src[n] || "").slice(Math.max(0, c - 60), c + 60));
+  } catch (x) {}
+  window.__bootErr(((e && e.message) || "script error") + where);
+});
+setTimeout(function () { if (!window.__booted) window.__bootErr("15 second mein load nahi hua (Index file adhoori paste hui ho sakti hai)"); }, 15000);
+</script>
+
+<header class="bar" id="bar" hidden>
+  <button id="backBtn" type="button" hidden aria-label="Back">← Back</button>
+  <h1 id="barTitle">MATRIX Milk Tracker</h1>
+  <button id="langBtn" type="button" hidden aria-label="Bhasha badlo">&#127760; <span data-noi18n>अ/A</span></button>
+  <button id="logoutBtn" type="button" hidden>Logout</button>
+</header>
+
+<!-- SETUP: server link -->
+<main id="scr-setup" hidden>
+  <div class="brand"><h1>MATRIX Milk Tracker</h1><p class="muted">Pehli baar setup</p></div>
+  <form class="panel" id="setupForm">
+    <h2>Server link</h2>
+    <p class="muted">Admin ne Google Apps Script deploy karke jo Web app URL diya hai, wo yahan paste karein. Ye link "https://script.google.com/macros/s/…/exec" jaisa hota hai.</p>
+    <label class="f">Web app URL<input type="url" id="apiUrl" required placeholder="https://script.google.com/macros/s/…/exec"></label>
+    <button class="btn primary block" id="setupSave" type="submit">Connect karo</button>
+    <p class="err" id="setupErr"></p>
+  </form>
+</main>
+
+<!-- AUTH -->
+<main id="scr-auth" hidden>
+  <div class="brand"><h1>MATRIX Milk Tracker</h1><p class="muted">Milk Supplementation · Login</p></div>
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-auth="login">Login</button>
+    <button type="button" role="tab" aria-selected="false" data-auth="signup">Create user ID</button>
+  </div>
+  <form class="panel" id="loginForm" autocomplete="on">
+    <label class="f">Username<input type="text" id="lUser" autocomplete="username" autocapitalize="none" required></label>
+    <label class="f">Password<input type="password" id="lPass" autocomplete="current-password" required></label>
+    <button class="btn primary block" type="submit" id="lBtn">Login</button>
+    <p class="err" id="lErr"></p>
+  </form>
+  <form class="panel" id="signupForm" hidden autocomplete="off">
+    <label class="f">Poora naam *<input type="text" id="sName" required></label>
+    <label class="f">Username * (chhote angrezi akshar/number, jaise pooja.k)<input type="text" id="sUser" autocapitalize="none" required></label>
+    <label class="f">Password * (kam se kam 6 akshar)<input type="password" id="sPass" autocomplete="new-password" required></label>
+    <label class="f">Mobile number * (ek number se ek hi account)<input type="tel" id="sPhone" inputmode="numeric" maxlength="10" placeholder="10 ank"></label>
+    <fieldset class="choice" style="border:0;padding:0;margin:0">
+      <legend class="muted" style="margin-bottom:6px">Aap kaun hain? *</legend>
+      <label><input type="radio" name="sRole" value="Milk Ambassador" checked> Milk Ambassador</label>
+      <label><input type="radio" name="sRole" value="Field Coordinator"> Field Coordinator</label>
+      <label><input type="radio" name="sRole" value="District Management"> District Management</label>
+      <label><input type="radio" name="sRole" value="Senior Management"> Senior Management</label>
+    </fieldset>
+    <div id="sPanchWrap" class="awc-pick">
+      <span class="muted">Aapke AWC * (ek ya zyada chunein)</span>
+      <label class="f">Sector<select id="sSector"></select></label>
+      <input type="search" id="sAwcSearch" placeholder="AWC naam ya code se dhoondo" aria-label="AWC dhoondo">
+      <div id="sAwcList" class="awc-list"></div>
+      <p class="muted" id="sAwcPicked"></p>
+    </div>
+    <div id="sSecWrap" class="awc-pick" hidden>
+      <span class="muted">Aapke sector * (jinke ambassadors ka data dekhna hai)</span>
+      <div class="sec-picks" id="sSecList"></div>
+    </div>
+    <label class="f" id="sCodeWrap" hidden>Access code * (admin se lein)<input type="text" id="sCode" autocapitalize="none"></label>
+    <button class="btn primary block" type="submit" id="sBtn">User ID banao</button>
+    <p class="err" id="sErr"></p>
+  </form>
+  <button class="btn ghost small" id="changeServer" type="button" style="align-self:center">Server link badlo</button>
+</main>
+
+<!-- HOME -->
+<main id="scr-lang" hidden data-noi18n>
+  <div class="panel lang-panel">
+    <h2>Bhasha chunein</h2>
+    <p class="lang-sub">भाषा चुनें &middot; Choose language</p>
+    <div class="lang-list" id="langList">
+      <button type="button" class="lang-card" data-lang="hl"><span class="lang-ic" style="background:#E8F4F7;color:#0B6B85">Aa</span><span><b>Hinglish</b><small>Doodh pilao &middot; Naya bachcha</small></span><i>&#10003;</i></button>
+      <button type="button" class="lang-card" data-lang="hi"><span class="lang-ic" style="background:#FFEBD6;color:#B25B00">अ</span><span><b>हिंदी</b><small>दूध पिलाओ &middot; नया बच्चा</small></span><i>&#10003;</i></button>
+      <button type="button" class="lang-card" data-lang="en"><span class="lang-ic" style="background:#E3EEFF;color:#1F5FBF">A</span><span><b>English</b><small>Give milk &middot; New child</small></span><i>&#10003;</i></button>
+    </div>
+    <p class="lang-note">Baad mein Home par upar &#127760; button se badal sakte hain.<br>बाद में होम पर ऊपर &#127760; बटन से बदल सकते हैं।</p>
+  </div>
+</main>
+
+<main id="scr-home" hidden>
+  <section class="hero">
+    <svg class="clouds" viewBox="0 0 400 220" preserveAspectRatio="none" aria-hidden="true"><circle cx="215" cy="8" r="38" fill="var(--sun)" opacity=".35"/><g fill="var(--milk)" opacity=".7"><ellipse cx="60" cy="40" rx="34" ry="12"/><ellipse cx="82" cy="32" rx="22" ry="12"/><ellipse cx="250" cy="20" rx="26" ry="9"/></g></svg>
+    <div class="hero-top">
+      <div>
+        <span class="role-chip" id="hRole"><i></i><span></span></span>
+        <h2 id="hName"></h2>
+        <div class="sub" id="hMeta"></div>
+        <div class="today-line" id="hToday"></div>
+      </div>
+      <div class="glass" id="hGlass"></div>
+    </div>
+    <svg class="wave" viewBox="0 0 400 46" preserveAspectRatio="none" aria-hidden="true"><path d="M0 22 C50 4 90 40 150 22 S260 2 310 22 S380 36 400 18 V46 H0Z" fill="var(--milk)" opacity=".9"/><path d="M0 32 C60 18 110 46 170 32 S280 16 330 32 S385 40 400 30 V46 H0Z" fill="var(--bg)"/></svg>
+  </section>
+  <div class="home-grid" id="homeTiles"></div>
+  <section class="panel week-card">
+    <div class="who"><h3>Is hafta vs pichla hafta</h3></div>
+    <div class="wk-legend" id="hWeekLegend"></div>
+    <div id="hWeek"></div>
+  </section>
+  <div class="panel alert-card" id="alertPanel" hidden>
+    <h3>Bachcha centre nahi aaya</h3>
+    <p class="muted" style="margin:0">Ye bachche kai din se centre nahi aaye. Ghar jaakar pata karein.</p>
+    <div class="recent" id="alertList"></div>
+  </div>
+  <div class="panel" id="newCgPanel" hidden>
+    <h3>Naye dekhbhal karne wale (7 din)</h3>
+    <p class="muted" style="margin:0">Ambassadors ne mauke par jode. Ek baar pushti kar lein.</p>
+    <div class="recent" id="newCgList"></div>
+  </div>
+  <div class="panel" id="recentPanel" hidden>
+    <div class="who"><h3 id="recentTitle">Haal ki entries</h3><button class="btn small ghost" id="recentRefresh" type="button">Refresh</button></div>
+    <div class="recent" id="recentList"></div>
+  </div>
+</main>
+
+<!-- REGISTRATION -->
+<main id="scr-reg" hidden>
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-reg="new">Naya bachcha</button>
+    <button type="button" role="tab" aria-selected="false" data-reg="growth">Wajan / Lambai</button>
+  </div>
+
+  <form class="panel" id="regForm" autocomplete="off" novalidate>
+    <h2>Child Registration</h2>
+    <label class="f">Bachche ka naam *<input type="text" id="rChild"></label>
+    <label class="f">Maa ka naam *<input type="text" id="rMother"></label>
+    <label class="f">Phone number *<input type="tel" id="rPhone" inputmode="numeric" maxlength="10" placeholder="10 ank"></label>
+    <label class="f">AWC *<select id="rPanch"></select></label>
+    <label class="f" id="rPanchNewW" hidden>Naye AWC ka naam * (jaise: Kersai AWC-1)<input type="text" id="rPanchNew"></label>
+    <p class="note bad" id="dupNote" hidden></p>
+    <label class="f">Janm tithi (DOB)<input type="date" id="rDob"></label>
+    <div class="row">
+      <label class="f grow">Wajan (kg) *<input type="number" id="rWeight" inputmode="decimal" step="0.01" min="1" max="40"></label>
+      <label class="f grow">Lambai (cm) *<input type="number" id="rHeight" inputmode="decimal" step="0.1" min="30" max="130"></label>
+    </div>
+    <fieldset class="choice" style="border:0;padding:0;margin:0">
+      <legend class="muted" style="margin-bottom:6px">ID card *</legend>
+      <label><input type="radio" name="rIdType" value="MCP card" checked> MCP card</label>
+      <label><input type="radio" name="rIdType" value="Masked Aadhaar"> Masked Aadhaar (sirf last 4 ank dikhein)</label>
+    </fieldset>
+    <div class="photo-row">
+      <div class="photo-box" id="rIdBox">ID card</div>
+      <div class="list" style="display:flex;flex-direction:column;gap:6px">
+        <button type="button" class="btn ghost" id="rIdBtn">ID card ki photo</button>
+        <span class="muted">Poora Aadhaar number dikhe to photo na lein.</span>
+      </div>
+    </div>
+    <div class="photo-row">
+      <div class="photo-box" id="rFaceBox">Bachche ki photo</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button type="button" class="btn ghost" id="rFaceBtn">Bachche ki photo kheecho</button>
+        <span class="muted" id="rFaceMsg">Record ke liye. Pehchaan saath aane wale vyakti ke chehre se hogi.</span>
+      </div>
+    </div>
+    <div class="cg-box">
+      <h3>Bachche ke saath aane wale * <small class="muted">(Maa + 3 tak)</small></h3>
+      <p class="muted">Bachcha inhi mein se kisi ke saath centre aayega, aur doodh ke waqt inka chehra scan hoga. Pehle <b>Maa</b> ka chehra jodein, phir papa, dadi, nani…</p>
+      <div class="cg-list" id="rCgList"></div>
+      <div class="row"><button type="button" class="btn ghost grow" id="rCgAdd">+ Maa ka chehra</button><button type="button" class="btn ghost grow" id="rCgLink">Parivar se jodein</button></div>
+      <div id="rCgLinkBox" class="awc-list" hidden></div>
+    </div>
+    <button class="btn primary block" type="submit" id="rSubmit">Register karo</button>
+    <p class="err" id="rErr"></p>
+  </form>
+
+  <form class="panel" id="growForm" hidden autocomplete="off" novalidate>
+    <h2>Wajan / lambai update</h2>
+    <div class="tabs" role="tablist" id="gType">
+      <button type="button" role="tab" aria-selected="true" data-gt="Monthly">Har mahine</button>
+      <button type="button" role="tab" aria-selected="false" data-gt="Quarterly">Har 3 mahine</button>
+    </div>
+    <label class="f">AWC<select id="gPanch"></select></label>
+    <label class="f">Bachcha *<select id="gChild"></select></label>
+    <div id="gHist" class="ghist" hidden></div>
+    <label class="f">Naapne ka mahina *<input type="month" id="gMonth"></label>
+    <p class="muted" id="gPeriod" style="margin:-4px 0 0"></p>
+    <div class="row">
+      <label class="f grow">Wajan (kg) *<input type="number" id="gWeight" inputmode="decimal" step="0.01" min="1" max="40"></label>
+      <label class="f grow">Lambai (cm) *<input type="number" id="gHeight" inputmode="decimal" step="0.1" min="30" max="130"></label>
+    </div>
+    <div class="photo-row">
+      <div class="photo-box" id="gFaceBox">Naya chehra</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button type="button" class="btn ghost" id="gFaceBtn" disabled>Bachche ki nayi photo (optional)</button>
+        <span class="muted">Record ke liye har mahine nayi photo.</span>
+      </div>
+    </div>
+    <button class="btn primary block" type="submit" id="gSubmit">Save karo</button>
+    <p class="err" id="gErr"></p>
+  </form>
+</main>
+
+<!-- MILK -->
+<main id="scr-milk" hidden>
+  <div class="panel" id="milkPick">
+    <h2>Doodh pilao</h2>
+    <p class="muted" id="mDate"></p>
+    <label class="f">AWC<select id="mPanch"></select></label>
+    <p class="muted" id="mChildInfo" style="margin:0"></p>
+    <p style="margin:0;font-weight:700">Kis bachche ko doodh dena hai? Naam dabao</p>
+    <label class="f" id="mFindW" hidden>Naam se dhundho<input id="mFind" type="search" placeholder="Bachche ya maa ka naam" autocomplete="off"></label>
+    <div class="kids" id="mKids"></div>
+    <label class="f" hidden>Bachcha chunein<select id="mChild"></select></label>
+    <button class="btn primary block" id="mScan" type="button" hidden>Chehra scan karo</button>
+    <button class="btn ghost block" id="mCgBtn" type="button" hidden>Saath aaye vyakti</button>
+    <div id="mCgBox" class="cg-pick" hidden>
+      <p class="muted" style="margin:0"><b>Bachche ke saath kaun aaya hai?</b> Naam chunein, phir unka chehra scan hoga. Doodh bachcha centre par hi piyega.</p>
+      <div class="cg-chips" id="mCgChips"></div>
+      <button class="btn small ghost" id="mCgNew" type="button">+ Naya vyakti jodo</button>
+    </div>
+    <p class="err" id="mErr"></p>
+  </div>
+  <form class="panel" id="famForm" hidden novalidate>
+    <div class="who"><h2 id="famTitle"></h2><span class="pill ok" id="famBadge">Chehra mila</span></div>
+    <p class="muted" style="margin:0">Inke saath aaye har bachche ke liye chunein ki usne centre par kitna doodh piya.</p>
+    <div class="choice" id="famKids"></div>
+    <button class="btn primary block" type="submit" id="famSave">Save karo</button>
+    <button class="btn ghost block" type="button" id="famCancel">Cancel</button>
+    <p class="err" id="famErr"></p>
+  </form>
+
+  <form class="panel" id="milkForm" hidden novalidate>
+    <div class="who"><h2 id="mfName"></h2><span class="pill ok" id="mfBadge">Face matched</span></div>
+    <h3>Doodh diya gaya?</h3>
+    <div class="yesno">
+      <button type="button" class="btn ok" data-given="Yes" aria-pressed="false">Haan (Yes)</button>
+      <button type="button" class="btn bad" data-given="No" aria-pressed="false">Nahi (No)</button>
+    </div>
+    <div id="consumeBox" hidden>
+      <h3 style="margin-bottom:8px">Doodh kitna piya?</h3>
+      <div class="choice">
+        <label><input type="radio" name="consumed" value="Full"> Pura (Full) — centre mein</label>
+        <label><input type="radio" name="consumed" value="Half"> Aadha (Half) — centre mein</label>
+        <label><input type="radio" name="consumed" value="Quarter"> Chauthai (Quarter) — centre mein</label>
+      </div>
+    </div>
+    <label class="f" id="ovReasonWrap" hidden>Override ka kaaran *<input type="text" id="ovReason" placeholder="Jaise: photo dhundhli, bachcha ro raha tha"></label>
+    <button class="btn primary block" type="submit" id="mfSave" disabled>Save karo</button>
+    <button class="btn ghost block" type="button" id="mfCancel">Cancel</button>
+    <p class="err" id="mfErr"></p>
+  </form>
+</main>
+
+<!-- USERS (District Management) -->
+<main id="scr-users" hidden>
+  <div class="panel">
+    <h2>Users / Accounts</h2>
+    <p class="muted" style="margin:0">Test ya dummy account <b>hatane</b> se uska mobile number free ho jata hai, aur us number se naya account ban sakta hai. Purani entries Sheet mein rehti hain.</p>
+    <div class="row">
+      <input type="search" id="uSearch" class="grow" placeholder="Naam, username ya mobile" aria-label="Account dhoondo" style="font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;min-height:46px;background:var(--bg);color:var(--fg)">
+      <select id="uRole" class="grow" aria-label="Role"><option value="">Sabhi role</option><option>Milk Ambassador</option><option>Field Coordinator</option><option>District Management</option><option>Senior Management</option></select>
+    </div>
+    <p class="muted" id="uCount" style="margin:0"></p>
+  </div>
+  <div class="recent" id="uList"></div>
+</main>
+
+<!-- REPORTS -->
+<main id="scr-rep" hidden>
+  <div class="panel">
+    <div class="tabs four" role="tablist" id="repTabs">
+      <button type="button" role="tab" aria-selected="true" data-per="day">Daily</button>
+      <button type="button" role="tab" aria-selected="false" data-per="week">Weekly</button>
+      <button type="button" role="tab" aria-selected="false" data-per="month">Monthly</button>
+      <button type="button" role="tab" aria-selected="false" data-per="custom">Date se</button>
+    </div>
+    <div class="row">
+      <label class="f grow" id="pDayW">Tareekh<input type="date" id="pDay"></label>
+      <label class="f grow" id="pMonthW" hidden>Mahina<input type="month" id="pMonth"></label>
+      <label class="f grow" id="pFromW" hidden>Se (from)<input type="date" id="pFrom"></label>
+      <label class="f grow" id="pToW" hidden>Tak (to)<input type="date" id="pTo"></label>
+    </div>
+    <label class="f">AWC / Sector<select id="pPanch"></select></label>
+    <label class="f" id="pAmbW" hidden>Milk Ambassador<select id="pAmb"></select></label>
+    <button class="btn primary block" id="pGo" type="button">Report dekho</button>
+    <p class="muted" id="pRange"></p>
+    <p class="err" id="pErr"></p>
+  </div>
+  <div id="repOut" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div class="panel">
+      <div class="stats">
+        <div class="stat"><span>Registered</span><b id="kReg">0</b></div>
+        <div class="stat"><span>Doodh diya</span><b id="kGiven">0</b></div>
+        <div class="stat"><span>Bachche</span><b id="kKids">0</b></div>
+        <div class="stat"><span>Face fail</span><b id="kFail">0</b></div>
+      </div>
+      <h3>Doodh kitna piya</h3>
+      <div class="donut-row"><div class="chart-wrap" id="kDonut"></div><div class="legend" id="kLegend"></div></div>
+      <h3>Roz ki entry</h3>
+      <div class="chart-wrap" id="kDaily"></div>
+    </div>
+    <div class="panel" id="ambPanel" hidden>
+      <h3>Milk Ambassador ke hisaab se</h3>
+      <div class="tw"><table><thead><tr><th>Ambassador</th><th>AWC</th><th class="n">Registered</th><th class="n">Doodh diya</th><th class="n">Face fail</th><th class="n">Override</th><th>Aakhri entry</th></tr></thead><tbody id="tAmb"></tbody></table></div>
+    </div>
+    <div class="panel">
+      <h3>Din ke hisaab se</h3>
+      <div class="tw"><table><thead><tr><th>Date</th><th class="n">Diya</th><th class="n">Full</th><th class="n">Half</th><th class="n">Qtr</th><th class="n">Nahi</th><th class="n">Face fail</th></tr></thead><tbody id="tDays"></tbody></table></div>
+    </div>
+    <div class="panel">
+      <h3>Bachche ke hisaab se</h3>
+      <div class="tw"><table><thead><tr><th>Bachcha</th><th>Maa</th><th>AWC</th><th class="n">Din mila</th><th class="n">Full</th><th class="n">Half</th><th class="n">Qtr</th><th class="n">Wajan</th><th class="n">Lambai</th></tr></thead><tbody id="tKids"></tbody></table></div>
+    </div>
+    <div class="panel">
+      <h3>Growth monitoring (mahina / 3 mahine)</h3>
+      <div class="gtiles" id="gTiles"></div>
+      <div id="gBars"></div>
+      <h4 style="margin:6px 0 0">Har bachche ka wajan graph</h4>
+      <p class="muted" style="margin:0">Pehle wo bachche jinka wajan ghata hai.</p>
+      <div class="gcards" id="gCards"></div>
+      <button class="btn ghost block" id="gMore" type="button" hidden>Aur bachche dikhao</button>
+      <h4 style="margin:6px 0 0">Saari entries</h4>
+      <div class="tw"><table><thead><tr><th>Bachcha</th><th>Mahina</th><th class="n">Wajan kg</th><th class="n">Lambai cm</th><th>By</th></tr></thead><tbody id="tGrowth"></tbody></table></div>
+    </div>
+    <div class="panel">
+      <h3>Download (CSV)</h3>
+      <div class="row">
+        <button class="btn grow" id="dChildren" type="button">Children details</button>
+        <button class="btn grow" id="dDaily" type="button">Daily consumption</button>
+        <button class="btn grow" id="dSummary" type="button">Child-wise summary</button>
+        <button class="btn grow" id="dGrowth" type="button">Growth</button>
+        <button class="btn grow" id="dGrowthAll" type="button">Growth (poora itihas)</button>
+      </div>
+      <a class="btn ghost" id="sheetLink" href="#" target="_blank" rel="noopener" hidden>Google Sheet kholo</a>
+    </div>
+  </div>
+  <div id="sumOut" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div class="panel">
+      <div class="stats">
+        <div class="stat"><span>Registered</span><b id="sReg">0</b></div>
+        <div class="stat"><span>Submissions</span><b id="sGiven">0</b></div>
+        <div class="stat"><span>Bachche</span><b id="sKids">0</b></div>
+        <div class="stat"><span>Face fail</span><b id="sFail">0</b></div>
+      </div>
+      <h3>Doodh kitna piya</h3>
+      <div class="donut-row"><div class="chart-wrap" id="sDonut"></div><div class="legend" id="sLegend"></div></div>
+      <h3>Roz ke submissions</h3>
+      <div class="chart-wrap" id="sDaily"></div>
+    </div>
+    <div class="panel">
+      <h3>Sector ke hisaab se</h3>
+      <div class="tw"><table><thead><tr><th>Sector</th><th class="n">AWC</th><th class="n">Registered</th><th class="n">Submissions</th><th class="n">Bachche</th><th class="n">Face fail</th></tr></thead><tbody id="tSec"></tbody></table></div>
+    </div>
+    <div class="panel">
+      <h3>AWC ke hisaab se</h3>
+      <div class="tw"><table><thead><tr><th>AWC</th><th>Sector</th><th class="n">Registered</th><th class="n">Submissions</th><th class="n">Bachche</th><th class="n">Face fail</th></tr></thead><tbody id="tAwc"></tbody></table></div>
+      <button class="btn" id="dSubm" type="button">Submission report (CSV)</button>
+    </div>
+    <div class="panel">
+      <h3>Growth monitoring (wajan)</h3>
+      <p class="muted" style="margin:0">Har bachche ki aakhri entry ka pichhli entry se mukabla. Naam nahi dikhaye jaate.</p>
+      <div class="gtiles" id="sgTiles"></div>
+      <div id="sgBars"></div>
+      <h4 style="margin:6px 0 0">Sector ke hisaab se</h4>
+      <div id="sgSecBars"></div>
+      <h4 style="margin:6px 0 0">AWC ke hisaab se</h4>
+      <div class="tw"><table><thead><tr><th>AWC</th><th>Sector</th><th class="n">Bachche</th><th class="n">Is samay naape</th><th class="n">&#9650; Badha</th><th class="n">&#9660; Ghata</th><th class="n">Same</th><th class="n">Ausat kg</th></tr></thead><tbody id="sgAwc"></tbody></table></div>
+      <button class="btn" id="dSubmG" type="button">Growth summary (CSV)</button>
+    </div>
+  </div>
+</main>
+
+<!-- result overlay (green tick / red cross) -->
+<div class="overlay" id="ov" hidden role="alertdialog" aria-live="assertive">
+  <div class="mark" id="ovMark"></div>
+  <h2 id="ovTitle"></h2>
+  <p id="ovSub"></p>
+  <div class="acts" id="ovActs"></div>
+</div>
+
+<!-- password reset sheet -->
+<div class="sheet" id="pwSheet" hidden>
+  <form class="box" id="pwForm" autocomplete="off">
+    <h2>Naya password set karein</h2>
+    <p class="muted" id="pwWho"></p>
+    <label class="f">Naya password (kam se kam 6 akshar)<input type="text" id="pwNew" autocapitalize="none"></label>
+    <div class="row"><button class="btn primary grow" type="submit">Set karo</button><button class="btn ghost" type="button" id="pwCancel">Cancel</button></div>
+    <p class="err" id="pwErr"></p>
+  </form>
+</div>
+
+<!-- caregiver sheet -->
+<div class="sheet" id="cgSheet" hidden>
+  <form class="box" id="cgForm" autocomplete="off" novalidate>
+    <h2 id="cgTitle">Dekhbhal karne wala vyakti</h2>
+    <label class="f">Naam *<input type="text" id="cgName"></label>
+    <label class="f">Rishta *<select id="cgRel"><option value="">— chunein —</option><option>Maa</option><option>Papa</option><option>Dadi</option><option>Dada</option><option>Nani</option><option>Nana</option><option>Bahan</option><option>Bhai</option><option>Chachi</option><option>Chacha</option><option>Bua</option><option>Mausi</option><option>Anya</option></select></label>
+    <label class="f">Mobile (optional)<input type="tel" id="cgPhone" inputmode="numeric" maxlength="10"></label>
+    <div class="photo-row">
+      <div class="photo-box" id="cgFaceBox">Chehra</div>
+      <div style="display:flex;flex-direction:column;gap:6px"><button type="button" class="btn ghost" id="cgFaceBtn">Chehre ki photo</button><span class="muted" id="cgFaceMsg">Seedha chehra, roshni mein.</span></div>
+    </div>
+    <div class="row"><button class="btn primary grow" type="submit" id="cgSave">Jodo</button><button class="btn ghost" type="button" id="cgCancel">Cancel</button></div>
+    <p class="err" id="cgErr"></p>
+  </form>
+</div>
+
+<!-- override sheet -->
+<div class="sheet" id="ovrSheet" hidden>
+  <form class="box" id="ovrForm" autocomplete="off">
+    <h2>Field Coordinator override</h2>
+    <p class="muted">Coordinator apna username-password daalein. Ye entry "Override" ke roop mein unke naam se save hogi.</p>
+    <label class="f">Coordinator username<input type="text" id="oUser" autocapitalize="none"></label>
+    <label class="f">Password<input type="password" id="oPass" autocomplete="off"></label>
+    <div class="row"><button class="btn primary grow" type="submit" id="oBtn">Override karo</button><button class="btn ghost" type="button" id="oCancel">Cancel</button></div>
+    <p class="err" id="oErr"></p>
+  </form>
+</div>
+
+<!-- camera sheet -->
+<div class="sheet" id="camSheet" hidden>
+  <div class="box">
+    <div class="row" style="align-items:center"><h2 class="grow" id="camTitle">Photo</h2><button class="btn small ghost" id="camClose" type="button">Band karo</button></div>
+    <video id="camVideo" playsinline muted hidden></video>
+    <div class="row" id="liveRow" hidden>
+      <button class="btn primary grow" id="camShoot" type="button">Photo kheecho</button>
+      <button class="btn ghost" id="camFlip" type="button">Camera badlo</button>
+    </div>
+    <button class="btn primary block" id="camStart" type="button">Camera chalu karo</button>
+    <label class="btn ghost block" for="camFile">Phone camera se</label>
+    <label class="btn ghost block" for="galFile" id="galLabel">Gallery se upload</label>
+    <input type="file" id="camFile" accept="image/*" capture="environment" hidden>
+    <input type="file" id="galFile" accept="image/*" hidden>
+    <p class="muted" id="camMsg"></p>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="face-api.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
