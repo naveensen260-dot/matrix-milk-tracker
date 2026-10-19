@@ -19,6 +19,8 @@ jobs:
           if [ -f index.html ]; then cp -f index.html $W/index.html; fi
           if [ -f MainActivity.kt ]; then cp -f MainActivity.kt $J/MainActivity.kt; fi
           if [ -f matrix.keystore ]; then cp -f matrix.keystore app/matrix.keystore; fi
+          if [ -f AndroidManifest.xml ]; then cp -f AndroidManifest.xml app/src/main/AndroidManifest.xml; fi
+          if [ -f file_paths.xml ]; then mkdir -p app/src/main/res/xml; cp -f file_paths.xml app/src/main/res/xml/file_paths.xml; fi
           if grep -q "namespace" build.gradle.kts; then
             cp -f build.gradle.kts app/build.gradle.kts
             printf '%s\n' 'plugins {' \
