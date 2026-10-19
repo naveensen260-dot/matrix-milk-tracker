@@ -6,13 +6,31 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
+      - name: Uploaded files ko sahi jagah rakho
+        run: |
+          W=app/src/main/assets/www
+          J=app/src/main/java/com/matrix/milktracker
+          mkdir -p $W $J
+          if [ -f app.js ]; then cp -f app.js $W/app.js; fi
+          if [ -f index.html ]; then cp -f index.html $W/index.html; fi
+          if [ -f MainActivity.kt ]; then cp -f MainActivity.kt $J/MainActivity.kt; fi
+          if [ -f matrix.keystore ]; then cp -f matrix.keystore app/matrix.keystore; fi
+          if grep -q "namespace" build.gradle.kts; then
+            cp -f build.gradle.kts app/build.gradle.kts
+            printf '%s\n' 'plugins {' \
+              '    id("com.android.application") version "8.5.2" apply false' \
+              '    id("org.jetbrains.kotlin.android") version "1.9.24" apply false' \
+              '}' > build.gradle.kts
+          fi
+          ls -la $W $J app
+
       - name: Build APK
         run: |
-          export JAVA_HOME=$JAVA_HOME_17_X64
+          export JAVA_HOME=${JAVA_HOME_17_X64:-$JAVA_HOME}
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           wget -q https://services.gradle.org/distributions/gradle-8.9-bin.zip
           unzip -q gradle-8.9-bin.zip
