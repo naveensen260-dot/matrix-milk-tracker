@@ -2047,6 +2047,39 @@ $$("#langList [data-lang]").forEach(b => b.onclick = () => {
 $("#langBtn").onclick = () => openLang(current === "lang" ? "home" : current);
 applyLang();
 
+/* ---------------- auto-update (Android app) ---------------- */
+// The Android app gets new app code from the server (Index.html of the Apps Script),
+// so a new APK is needed only for camera/face-model/Android changes.
+const OTA = !WEB && !!(window.AndroidBridge && typeof AndroidBridge.saveUpdate === "function");
+function otaBuild(html){
+  const m = html.match(/var __APP = \[([\s\S]*?)\];/);
+  if (!m) throw new Error("update: app code nahi mila");
+  const b64 = (m[1].match(/"[A-Za-z0-9+\/=]*"/g) || []).map(x => x.slice(1, -1)).join("");
+  let js = atob(b64);
+  if (!/^const DEFAULT_API_URL = .*$/m.test(js) || js.length < 50000) throw new Error("update: app code adhoora hai");
+  js = js.replace(/^const DEFAULT_API_URL = .*$/m, () => "const DEFAULT_API_URL = " + JSON.stringify(S.api) + ";");
+  const page = html.replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@vladmandic\/face-api[^"]*"><\/script>\s*<script>\s*\/\* App code is stored as base64[\s\S]*?<\/script>/,
+    () => '<script src="face-api.js"></script>\n<script src="app.js"></script>');
+  if (page === html || page.indexOf('id="scr-home"') < 0) throw new Error("update: page adhoora hai");
+  return { page, js };
+}
+async function otaCheck(){
+  if (!OTA || !S.api || S.api === "web" || !navigator.onLine) return;
+  try {
+    const cur = String(AndroidBridge.otaVersion() || "");
+    const bad = String((AndroidBridge.otaBad && AndroidBridge.otaBad()) || "");
+    const v = await api("appVersion");
+    if (!v.ver || v.ver === cur || v.ver === bad) return;
+    const b = await api("appBundle");
+    const x = otaBuild(b.html);
+    if (String(AndroidBridge.saveUpdate(b.ver, x.page, x.js) || "") !== "OK") return;
+    if (!cur) return; // first check after installing the APK: just keep it ready for next start
+    if (current === "home") overlay({ ok: true, title: "Naya update aa gaya", sub: "App ka naya version download ho gaya. Abhi lagane ke liye 'Abhi update karo' dabayein, warna agli baar app kholne par apne aap lag jayega.",
+      actions: [{ label: "Abhi update karo", cls: "primary", run: () => AndroidBridge.reloadApp() }, { label: "Baad mein", cls: "ghost" }] });
+    else toast("Naya update tayyar hai \u2014 agli baar app kholne par lag jayega.");
+  } catch(e){}
+}
+
 /* ---------------- boot ---------------- */
 roleChanged();
 if (WEB){ S.api = "web"; $("#changeServer").hidden = true; }
@@ -2056,5 +2089,7 @@ else { show("home"); api("me").then(r => { S.user = r.user; store.set("mt.user",
 setTimeout(loadModels, 300);
 loadAwcList();
 setTimeout(() => { renderNetBar(); syncOutbox(); heartbeat(true); }, 2500);
+setTimeout(otaCheck, 4000);
+if (OTA && AndroidBridge.otaOk) try { AndroidBridge.otaOk(); } catch(e){}
 window.__booted = true; if (window.__hideSplash) window.__hideSplash(); else { const bootEl = document.getElementById("boot"); if (bootEl) bootEl.hidden = true; }
 })();
