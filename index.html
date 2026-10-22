@@ -199,6 +199,8 @@ header.bar h1{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:now
 .netbar{position:sticky;top:0;z-index:6;background:#7A4A00;color:#fff;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 14px;font-weight:600;font-size:.92rem}
 .netbar button{border:0;background:#fff;color:#7A4A00;border-radius:8px;padding:6px 12px;font:inherit;font-weight:800;cursor:pointer}
 .age-warn{color:var(--bad);font-weight:700}
+#rAgeMsg.ok{color:var(--ok,#1b7f3b);font-weight:600}
+#rAgeMsg.bad{color:var(--bad);font-weight:700}
 .tag-tools{display:flex;flex-direction:column;gap:8px;background:var(--sunk);border-radius:12px;padding:10px}
 .tag-tools textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:10px;padding:8px;margin:6px 0;background:var(--bg);color:var(--fg)}
 .tag-tools .row select{flex:1}
@@ -576,6 +578,7 @@ setTimeout(function () { if (!window.__booted) window.__bootErr("15 second mein 
     <label class="f" id="rPanchNewW" hidden>Naye AWC ka naam * (jaise: Kersai AWC-1)<input type="text" id="rPanchNew"></label>
     <p class="note bad" id="dupNote" hidden></p>
     <label class="f">Janm tithi (DOB)<input type="date" id="rDob"></label>
+    <p class="note" id="rAgeMsg" hidden></p>
     <div class="row">
       <label class="f grow">Wajan (kg) *<input type="number" id="rWeight" inputmode="decimal" step="0.01" min="1" max="40"></label>
       <label class="f grow">Lambai (cm) *<input type="number" id="rHeight" inputmode="decimal" step="0.1" min="30" max="130"></label>
@@ -928,6 +931,7 @@ setTimeout(function () { if (!window.__booted) window.__bootErr("15 second mein 
     <input type="file" id="camFile" accept="image/*" capture="environment" hidden>
     <input type="file" id="galFile" accept="image/*" hidden>
     <p class="muted" id="camMsg"></p>
+    <button class="btn ghost block" id="camSet" type="button" hidden>&#9881; Settings kholo (Camera Allow)</button>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>

@@ -10,6 +10,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.Settings
+import android.webkit.GeolocationPermissions
 import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
@@ -21,6 +23,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.webkit.WebViewAssetLoader
 import android.webkit.WebViewClient
 import java.io.File
@@ -80,15 +83,81 @@ class MainActivity : AppCompatActivity() {
                 if (granted) req.grant(arrayOf(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) else req.deny()
             }
             pendingCamRequest = null
+            pendingChooser?.let { go -> pendingChooser = null; go(granted) }
         }
+
+    /* ---- GPS location for the page (saved with the face scan) ---- */
+    private var pendingGeo: Pair<String?, GeolocationPermissions.Callback>? = null
+
+    private val locationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { res ->
+            val ok = res.values.any { it }
+            pendingGeo?.let { (origin, cb) -> cb.invoke(origin, ok, ok) }
+            pendingGeo = null
+        }
+
+    private fun hasLocation(): Boolean =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    /* ---- photo from the phone's own camera app (file input with capture) ---- */
+    private var cameraPhotoUri: Uri? = null
+    private var cameraPhotoFile: File? = null
+    private var pendingChooser: ((Boolean) -> Unit)? = null
 
     private val filePicker =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
-            fileCallback?.onReceiveValue(
-                WebChromeClient.FileChooserParams.parseResult(res.resultCode, res.data)
-            )
+            var result = WebChromeClient.FileChooserParams.parseResult(res.resultCode, res.data)
+            if (result == null && res.resultCode == RESULT_OK) {
+                // The camera app saves the photo to our file and returns no data.
+                val f = cameraPhotoFile
+                val u = cameraPhotoUri
+                if (f != null && u != null && f.exists() && f.length() > 0) result = arrayOf(u)
+            }
+            fileCallback?.onReceiveValue(result)
+            fileCallback = null
+            cameraPhotoUri = null
+            cameraPhotoFile = null
+        }
+
+    private fun hasCamera(): Boolean =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+
+    private fun newCameraIntent(): Intent {
+        val dir = File(cacheDir, "camera")
+        dir.mkdirs()
+        dir.listFiles()?.forEach { it.delete() } // keep only the newest photo
+        val f = File(dir, "photo_" + System.currentTimeMillis() + ".jpg")
+        val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", f)
+        cameraPhotoFile = f
+        cameraPhotoUri = uri
+        return Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+            putExtra(MediaStore.EXTRA_OUTPUT, uri)
+            addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+
+    /** "Phone camera se" opens the camera directly; "Gallery se" opens the photo picker. */
+    private fun openImagePicker(capture: Boolean, camOk: Boolean) {
+        try {
+            if (capture && camOk) {
+                filePicker.launch(newCameraIntent()); return
+            }
+            val pick = Intent(Intent.ACTION_GET_CONTENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "image/*"
+            }
+            val chooser = Intent.createChooser(pick, "Photo chunein")
+            if (capture && !camOk) {
+                // Camera permission refused: tell the page, then fall back to the picker.
+                web.post { web.evaluateJavascript("window.__camDenied && window.__camDenied()", null) }
+            }
+            filePicker.launch(chooser)
+        } catch (e: Exception) {
+            fileCallback?.onReceiveValue(null)
             fileCallback = null
         }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,6 +177,7 @@ class MainActivity : AppCompatActivity() {
             mediaPlaybackRequiresUserGesture = false
             allowFileAccess = false
             allowContentAccess = false
+            setGeolocationEnabled(true)
         }
 
         web.webViewClient = object : WebViewClient() {
@@ -135,6 +205,26 @@ class MainActivity : AppCompatActivity() {
         }
 
         web.webChromeClient = object : WebChromeClient() {
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback?
+            ) {
+                if (callback == null) return
+                if (hasLocation()) {
+                    callback.invoke(origin, true, true); return
+                }
+                pendingGeo?.let { (o, cb) -> cb.invoke(o, false, false) }
+                pendingGeo = Pair(origin, callback)
+                try {
+                    locationPermission.launch(
+                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+                    )
+                } catch (e: Exception) {
+                    pendingGeo = null
+                    callback.invoke(origin, false, false)
+                }
+            }
+
             override fun onPermissionRequest(request: PermissionRequest) {
                 runOnUiThread {
                     if (!request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
@@ -159,11 +249,23 @@ class MainActivity : AppCompatActivity() {
             ): Boolean {
                 fileCallback?.onReceiveValue(null)
                 fileCallback = callback
-                return try {
-                    filePicker.launch(params.createIntent()); true
-                } catch (e: Exception) {
-                    fileCallback = null; false
+                val types = params.acceptTypes.filter { it.isNotBlank() }
+                val image = types.isEmpty() || types.any { it.startsWith("image") }
+                if (!image) {
+                    return try {
+                        filePicker.launch(params.createIntent()); true
+                    } catch (e: Exception) {
+                        fileCallback = null; false
+                    }
                 }
+                val capture = params.isCaptureEnabled
+                if (!capture || hasCamera()) {
+                    openImagePicker(capture, true)
+                } else {
+                    pendingChooser = { granted -> openImagePicker(true, granted) }
+                    cameraPermission.launch(Manifest.permission.CAMERA)
+                }
+                return true
             }
         }
 
@@ -213,6 +315,20 @@ class MainActivity : AppCompatActivity() {
             "OK"
         } catch (e: Exception) {
             "ERROR: " + (e.message ?: "update failed")
+        }
+
+        /** "granted" or "denied": camera permission of the app. */
+        @JavascriptInterface
+        fun cameraStatus(): String = if (hasCamera()) "granted" else "denied"
+
+        /** Opens this app's page in phone Settings (to allow the camera). */
+        @JavascriptInterface
+        fun openAppSettings() {
+            runOnUiThread {
+                try {
+                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+                } catch (e: Exception) { /* ignore */ }
+            }
         }
 
         /** Called by the page after it started fine. */
